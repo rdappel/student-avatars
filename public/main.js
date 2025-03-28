@@ -22,9 +22,11 @@ import { interpolateEaseInOut } from './bezier.js'
 	const getByte = () => Math.floor(Math.random() * 255)
 	const getRandomColor = () => `rgb(${getByte()}, ${getByte()}, ${getByte()})`
 
-	const canvas = document.getElementById('background-canvas')
+	const canvas = document.querySelector('#background-canvas')
 	const clearColor = getRandomColor()
 	const gameLoop = getGameLoop({ canvas, clearColor })
+	const githubCorner = document.querySelector('.github-corner svg')
+	githubCorner.style.color = clearColor
 
 	const radius = 64
 	const borderWidth = 8
