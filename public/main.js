@@ -1,194 +1,222 @@
 
+import { getGameLoop } from './game-loop.js'
+import { loadImages, createImageClipper } from './image.js'
+//import { createGrid } from './grid.js'
+import { interpolateEaseInOut } from './bezier.js'
+
+
 (async () => {
 
-const canvas = document.getElementById('background-canvas')
-const context = canvas.getContext('2d')
+	// testing images
+	const imageSources = [
+		'images/building1.jpg',
+		'images/fox-logo.gif',
+		'images/logo.png',
+		'https://avatars.githubusercontent.com/u/5315168?v=4',
+		'https://avatars.githubusercontent.com/u/1252813?v=4',
+		'https://avatars.githubusercontent.com/u/1778599?v=4',
+		'https://avatars.githubusercontent.com/u/16659436?v=4',
+		'https://avatars.githubusercontent.com/u/171260387?v=4'
+	]
 
-const circleDiameter = 120
-const borderWidth = 5
-const gap = 10
-const circles = []
+	const getByte = () => Math.floor(Math.random() * 255)
+	const getRandomColor = () => `rgb(${getByte()}, ${getByte()}, ${getByte()})`
 
-const baseSpeed = 30
-const backgroundColor = (Math.random() * 255).toFixed(0)
+	const canvas = document.getElementById('background-canvas')
+	const clearColor = getRandomColor()
+	const gameLoop = getGameLoop({ canvas, clearColor })
 
-const getCurrentDimensions = () => {
-	const width = Math.ceil(canvas.width / circleDiameter) + 2
-	const height = Math.ceil(canvas.height / circleDiameter) + 2
-	return { width, height }
-}
+	const radius = 64
+	const borderWidth = 8
+	const gap = 12
+	const circleDistance = radius * 2 + gap
+	const circles = []
 
-let gridSize = [0, 0]
-let previousTime = 0
-
-
-const clipImage = (image, resolve) => {
-	const tempCanvas = document.createElement('canvas')
-	const tempContext = tempCanvas.getContext('2d')
-
-	const radius = circleDiameter / 2 - borderWidth
-
-	tempCanvas.width = circleDiameter
-	tempCanvas.height = circleDiameter
-
-	tempContext.beginPath()
-	tempContext.arc(circleDiameter / 2, circleDiameter / 2, radius, 0, Math.PI * 2)
-	tempContext.clip()
-
-	tempContext.drawImage(image, 0, 0, circleDiameter, circleDiameter)
-
-	resolve(tempCanvas)
-}
-
-const clipImages = async images => {
-
-	const clippedImages = []
-	const imageLoadPromises = images.map(image => {
-		return new Promise(resolve => {
-			if (image.complete) clipImage(image, resolve)
-			else image.onload = () => clipImage(image, resolve)
-		})
-	})
-
-	return await Promise.all(imageLoadPromises)
-}
-
-
-const images = await clipImages([...document.querySelectorAll('img')])
-
-const createCircle = (x, y) => {
-	const color = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`
-
-	const randomIndex = Math.floor(Math.random() * images.length)
-	console.log(randomIndex)
-	const image = images[randomIndex]
-	return { x, y, color, image }
-}
-
-
-const initializeCircles = () => {
-	const { width, height } = getCurrentDimensions()
-	gridSize = [width, height]
-	const offset = (circleDiameter + gap)
-
-	const baseOffset = -(offset / 2)
-
-		;[...Array(width * height).keys()].forEach(i => {
-			const x = (i % width) * offset + baseOffset
-			const y = (Math.floor(i / width)) * offset + baseOffset
-			circles.push(createCircle(x, y))
-		})
-}
-
-const update = currentTime => {
-	const delta = (currentTime - previousTime) / 1000
-	previousTime = currentTime
-
-	circles.forEach(circle => {
-		const rowIndex = Math.floor(circle.y / (circleDiameter + gap))
-		let direction = rowIndex % 2 === 0 ? 1 : -1
-
-		const speed = baseSpeed * delta * direction
-
-		circle.x += speed
-
-
-		if (direction > 0 && circle.x - circleDiameter > canvas.width) {
-			circle.x -= (gridSize[0] - 1) * (circleDiameter + gap)
-		}
-
-		if (direction < 0 && circle.x + circleDiameter < 0) {
-			circle.x += (gridSize[0] - 1) * (circleDiameter + gap)
-		}
-
-		// if (circle.x < -circleDiameter && direction === -1) {
-		// 	circle.x += (gridSize[0] - 1) * (circleDiameter + gap) + gap
-		// }
-		// else if (circle.x > canvas.width - 50 && direction === 1) {
-		// 	circle.x = -circleDiameter - gap
-		// }
-	})
-
-	draw()
-	requestAnimationFrame(update)
-}
-
-
-const resizeCanvas = () => {
-	const growingOnX = canvas.width < window.innerWidth
-	const growingOnY = canvas.height < window.innerHeight
-
-	canvas.width = window.innerWidth
-	canvas.height = window.innerHeight
-
-	const oldGridSize = gridSize
-	const { width, height } = getCurrentDimensions()
-
-	// if (growingOnX) {
-	// 	const circlesToAddX = width - oldGridSize[0]
-	// 	console.log(circlesToAddX)
-	// }
-
-	const circlesToAddX = growingOnX ? width - oldGridSize[0] : 0
-	const circlesToAddY = growingOnY ? height - oldGridSize[1] : 0
-
-	// // first generation or larger size
-	// const noCircles = circles.length === 0
-	// if (noCircles && (!growingOnX || !growingOnY)) return draw()
-
-	// generateCircles(noCircles || growingOnX, noCircles || growingOnY)
-
-	// draw()
-}
-
-const draw = () => {
-	context.clearRect(0, 0, canvas.width, canvas.height)
-	context.fillStyle = backgroundColor
-	context.fillRect(0, 0, canvas.width, canvas.height)
-
-
-	// draw grid
-	const drawGrid = () => {
-		context.strokeStyle = 'black'
-		context.lineWidth = 1
-		context.beginPath()
-		const offset = circleDiameter + gap
-		const { width, height } = getCurrentDimensions()
-		for (let i = 0; i < width; i++) {
-			context.moveTo(i * offset, 0)
-			context.lineTo(i * offset, canvas.height)
-		}
-
-		for (let i = 0; i < height; i++) {
-			context.moveTo(0, i * offset)
-			context.lineTo(canvas.width, i * offset)
-		}
-
-		context.stroke()
+	const availableScreenSize = {
+		width: window.screen.availWidth,
+		height: window.screen.availHeight
 	}
 
-	//drawGrid()
+	const resizeCanvas = () => {
+		canvas.width = window.innerWidth
+		canvas.height = window.innerHeight
+	}
+	window.addEventListener('resize', resizeCanvas)
+	resizeCanvas()
 
-	const radius = circleDiameter / 2
-	const drawCircle = (({ x, y, color, image }) => {
-		context.fillStyle = color
+	//const grid = createGrid(circleDistance, canvas)
+	
 
-		context.beginPath()
-		context.arc(x, y, circleDiameter / 2, 0, Math.PI * 2)
-		context.fill()
+	const clipImage = createImageClipper(radius - borderWidth)
+	const images = (await loadImages(imageSources)).map(clipImage)
 
-		// draw the image on top
-		context.drawImage(image, x - radius, y - radius, circleDiameter, circleDiameter)
-	})
+	const getRandomImage = () => images[Math.floor(Math.random() * images.length)]
+
+	const createCircle = (position, column, row) => {
+		const color = getRandomColor()
+		const offset = { x: 0, y: 0 }
+		const image = getRandomImage()
+		return { position, color, image, column, row, offset }
+	}
+
+	const initializeCircles = () => {
+		const { width, height } = availableScreenSize
+
+		const circlesPerRow = Math.ceil(width / circleDistance) + 2
+		const circlesPerColumn = Math.ceil(height / circleDistance) + 2
+		const circleCount = circlesPerRow * circlesPerColumn
+
+		;[...Array(circleCount).keys()].forEach(i => {
+			const column = (i % circlesPerRow)
+			const row = Math.floor(i / circlesPerRow)
+			const position = {
+				x: column * circleDistance,
+				y: row * circleDistance
+			}
+			circles.push(createCircle(position, column, row))
+		})
+
+		return { width: circlesPerRow, height: circlesPerColumn }
+	}
+
+	const gridSize = initializeCircles()
+	
+	//const centeringOffsetX = (gridSize.width * circleDistance - canvas.width) / 2
+	const xRemainder = canvas.width % circleDistance
+	const yRemainder = canvas.height % circleDistance
+	const xAdjustment = (xRemainder + gap) / 2
+	const yAdjustment = (yRemainder + gap) / 2
 
 
-	circles.forEach(drawCircle)
 
-}
+	const interpolationTime = 5 // seconds for a full loop of the row
+	const adjacentDelay = 0.25 // seconds for adjacent rows to start their animation
 
-window.addEventListener('resize', resizeCanvas)
-resizeCanvas()
-initializeCircles()
-requestAnimationFrame(update)
+	const getRandomRowAndColumn = disallow => {
+		const getIndex = dimension => {
+			const index = Math.floor(Math.random() * (gridSize[dimension] - 2)) + 1
+			return (index === disallow) ? getIndex(dimension) : index
+		}
+		// avoid edges to prevent out of bounds errors
 
+		const column = getIndex('width')
+		const row = getIndex('height')
+		return { column, row }
+	}
+
+	const resetAnimation = () => {
+		const delay = Math.random() * 5 + 1 // random delay between 1 and 6 seconds
+		const isHorizontal = Math.random() < 0.66 // 2/3 chance of horizontal movement
+		const { column, row } = getRandomRowAndColumn()
+		const index = isHorizontal ? row : column
+		const direction = Math.random() < 0.5 ? 1 : -1
+		const currentTime = 0
+		const adjacentTime = -adjacentDelay
+
+		console.log({ delay, isHorizontal, index, direction, currentTime, adjacentTime })
+		return { delay, isHorizontal, index, direction, currentTime, adjacentTime }
+	}
+
+	let animation = resetAnimation()
+
+	const clamp = (value, min = 0, max = 1) => {
+		return Math.max(min, Math.min(value, max))
+	}
+
+	const update = delta => {
+		animation.delay -= delta
+		if (animation.delay > 0) return
+
+		const { index, isHorizontal, direction } = animation
+
+		animation.currentTime += delta
+		animation.adjacentTime += delta
+
+		const animationComplete = animation.adjacentTime >= interpolationTime
+
+		if (animation.currentTime >= interpolationTime) animation.currentTime = interpolationTime
+		if (animation.adjacentTime >= interpolationTime) animation = resetAnimation()
+
+		const tMain = clamp(animation.currentTime / interpolationTime)
+		const tAdjacent = clamp(animation.adjacentTime / interpolationTime)
+
+		const rowMatchesIndex = ({ row }) => row === index
+		const columnMatchesIndex = ({ column }) => column === index
+		const rowIsAdjacentToIndex = ({ row }) => Math.abs(row - index) === 1
+		const columnIsAdjacentToIndex = ({ column }) => Math.abs(column - index) === 1
+
+		const find = {
+			match: isHorizontal ? rowMatchesIndex : columnMatchesIndex,
+			adjacent: isHorizontal ? rowIsAdjacentToIndex : columnIsAdjacentToIndex
+		}
+
+		const selectedCircles = circles.filter(c => find.match(c))
+		const adjacentCircles = circles.filter(c => find.adjacent(c))
+
+		const axis = isHorizontal ? 'x' : 'y'
+		const fullWidth = selectedCircles.length * circleDistance
+
+		if (animationComplete) {
+			// move circles back to their original positions after the animation completes
+			selectedCircles.forEach(circle => circle.position[axis] += circle.offset[axis])
+			adjacentCircles.forEach(circle => circle.position[axis] += circle.offset[axis])
+		}
+
+
+		const mainOffset = interpolateEaseInOut(0, fullWidth, tMain) * direction
+		const adjacentOffset = interpolateEaseInOut(0, fullWidth, tAdjacent) * direction
+
+		const move = (circle, offset) => {
+			circle.offset[axis] = offset
+
+			if (direction > 0 && circle.offset[axis] + circle.position[axis] >= fullWidth) {
+				circle.position[axis] -= fullWidth
+				circle.image = getRandomImage()
+			}
+
+			if (direction < 0 && circle.offset[axis] + circle.position[axis] < 0) {
+				circle.position[axis] += fullWidth
+				circle.image = getRandomImage()
+			}
+		}
+
+		selectedCircles.forEach(circle => move(circle, mainOffset))
+		adjacentCircles.forEach(circle => move(circle, adjacentOffset))
+
+	}
+
+	const draw = context => {
+
+		//grid.draw(context)
+
+		const smallRadius = radius - borderWidth
+		const diameter = (smallRadius) * 2
+		const drawCircle = (({ position, color, image, offset }) => {
+
+			const { width, height } = availableScreenSize
+			if (position.x + offset.x - radius > width + circleDistance) return
+			if (position.y + offset.y - radius > height + circleDistance) return
+			if (position.x + offset.x + radius < 0) return
+			if (position.y + offset.y + radius < 0) return
+
+			context.fillStyle = color
+
+			context.beginPath()
+			const x = position.x + offset.x - circleDistance + radius - (circleDistance - xAdjustment)
+			const y = position.y + offset.y - circleDistance + radius - (circleDistance - yAdjustment)
+			context.arc(x, y, radius, 0, Math.PI * 2)
+			context.fill()
+
+			const insetX = x - smallRadius
+			const insetY = y - smallRadius
+
+			context.drawImage(image, insetX, insetY, diameter, diameter)
+		})
+
+
+		circles.forEach(drawCircle)
+
+	}
+
+	gameLoop.start(update, draw)
 })()
