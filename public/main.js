@@ -107,16 +107,17 @@ import { interpolateEaseInOut } from './bezier.js'
 	}
 
 	const resetAnimation = () => {
-		const delay = Math.random() * 5 + 1 // random delay between 1 and 6 seconds
+		const delay = Math.random() * 2 + 1 // random delay between 1 and 6 seconds
 		const isHorizontal = Math.random() < 0.66 // 2/3 chance of horizontal movement
 		const { column, row } = getRandomRowAndColumn()
 		const index = isHorizontal ? row : column
 		const direction = Math.random() < 0.5 ? 1 : -1
 		const currentTime = 0
 		const adjacentTime = -adjacentDelay
+		const twoOverTime = -2 * adjacentDelay
+		const threeOverTime = -3 * adjacentDelay
 
-		console.log({ delay, isHorizontal, index, direction, currentTime, adjacentTime })
-		return { delay, isHorizontal, index, direction, currentTime, adjacentTime }
+		return { delay, isHorizontal, index, direction, currentTime, adjacentTime, twoOverTime, threeOverTime }
 	}
 
 	let animation = resetAnimation()
@@ -133,27 +134,41 @@ import { interpolateEaseInOut } from './bezier.js'
 
 		animation.currentTime += delta
 		animation.adjacentTime += delta
+		animation.twoOverTime += delta
+		animation.threeOverTime += delta
 
-		const animationComplete = animation.adjacentTime >= interpolationTime
+		const animationComplete = animation.threeOverTime >= interpolationTime
 
 		if (animation.currentTime >= interpolationTime) animation.currentTime = interpolationTime
-		if (animation.adjacentTime >= interpolationTime) animation = resetAnimation()
+		if (animation.adjacentTime >= interpolationTime) animation.adjacentTime = interpolationTime
+		if (animation.twoOverTime >= interpolationTime) animation.twoOverTime = interpolationTime
+		if (animationComplete) animation = resetAnimation()
 
 		const tMain = clamp(animation.currentTime / interpolationTime)
 		const tAdjacent = clamp(animation.adjacentTime / interpolationTime)
+		const tTwoOver = clamp(animation.twoOverTime / interpolationTime)
+		const tThreeOver = clamp(animation.threeOverTime / interpolationTime)
 
 		const rowMatchesIndex = ({ row }) => row === index
 		const columnMatchesIndex = ({ column }) => column === index
 		const rowIsAdjacentToIndex = ({ row }) => Math.abs(row - index) === 1
+		const rowIsTwoOverFromIndex = ({ row }) => Math.abs(row - index) === 2
+		const rowIsThreeOverFromIndex = ({ row }) => Math.abs(row - index) === 3
 		const columnIsAdjacentToIndex = ({ column }) => Math.abs(column - index) === 1
+		const columnIsTwoOverFromIndex = ({ column }) => Math.abs(column - index) === 2
+		const columnIsThreeOverFromIndex = ({ column }) => Math.abs(column - index) === 3
 
 		const find = {
 			match: isHorizontal ? rowMatchesIndex : columnMatchesIndex,
-			adjacent: isHorizontal ? rowIsAdjacentToIndex : columnIsAdjacentToIndex
+			adjacent: isHorizontal ? rowIsAdjacentToIndex : columnIsAdjacentToIndex,
+			twoOver: isHorizontal ? rowIsTwoOverFromIndex : columnIsTwoOverFromIndex,
+			threeOver: isHorizontal ? rowIsThreeOverFromIndex : columnIsThreeOverFromIndex
 		}
 
 		const selectedCircles = circles.filter(c => find.match(c))
 		const adjacentCircles = circles.filter(c => find.adjacent(c))
+		const twoOverCircles = circles.filter(c => find.twoOver(c))
+		const threeOverCircles = circles.filter(c => find.threeOver(c))
 
 		const axis = isHorizontal ? 'x' : 'y'
 		const fullWidth = selectedCircles.length * circleDistance
@@ -162,11 +177,15 @@ import { interpolateEaseInOut } from './bezier.js'
 			// move circles back to their original positions after the animation completes
 			selectedCircles.forEach(circle => circle.position[axis] += circle.offset[axis])
 			adjacentCircles.forEach(circle => circle.position[axis] += circle.offset[axis])
+			twoOverCircles.forEach(circle => circle.position[axis] += circle.offset[axis])
+			threeOverCircles.forEach(circle => circle.position[axis] += circle.offset[axis])
 		}
 
 
 		const mainOffset = interpolateEaseInOut(0, fullWidth, tMain) * direction
 		const adjacentOffset = interpolateEaseInOut(0, fullWidth, tAdjacent) * direction
+		const twoOverOffset = interpolateEaseInOut(0, fullWidth, tTwoOver) * direction
+		const threeOverOffset = interpolateEaseInOut(0, fullWidth, tThreeOver) * direction
 
 		const move = (circle, offset) => {
 			circle.offset[axis] = offset
@@ -184,6 +203,8 @@ import { interpolateEaseInOut } from './bezier.js'
 
 		selectedCircles.forEach(circle => move(circle, mainOffset))
 		adjacentCircles.forEach(circle => move(circle, adjacentOffset))
+		twoOverCircles.forEach(circle => move(circle, twoOverOffset))
+		threeOverCircles.forEach(circle => move(circle, threeOverOffset))
 
 	}
 
