@@ -47,7 +47,6 @@ import { interpolateEaseInOut } from './bezier.js'
 	resizeCanvas()
 
 	//const grid = createGrid(circleDistance, canvas)
-	
 
 	const clipImage = createImageClipper(radius - borderWidth)
 	const images = (await loadImages(imageSources)).map(clipImage)
@@ -83,23 +82,22 @@ import { interpolateEaseInOut } from './bezier.js'
 
 	const gridSize = initializeCircles()
 	
-	//const centeringOffsetX = (gridSize.width * circleDistance - canvas.width) / 2
 	const xRemainder = canvas.width % circleDistance
 	const yRemainder = canvas.height % circleDistance
 	const xAdjustment = (xRemainder + gap) / 2
 	const yAdjustment = (yRemainder + gap) / 2
 
-
-
+	const numberOfAnimationRows = gridSize.height > gridSize.width ? gridSize.height : gridSize.width
+	const animationIndices = [...Array(numberOfAnimationRows).keys()]
 	const interpolationTime = 5 // seconds for a full loop of the row
 	const adjacentDelay = 0.25 // seconds for adjacent rows to start their animation
+	const changeImageOnWrap = false
 
 	const getRandomRowAndColumn = disallow => {
 		const getIndex = dimension => {
 			const index = Math.floor(Math.random() * (gridSize[dimension] - 2)) + 1
 			return (index === disallow) ? getIndex(dimension) : index
 		}
-		// avoid edges to prevent out of bounds errors
 
 		const column = getIndex('width')
 		const row = getIndex('height')
@@ -107,105 +105,75 @@ import { interpolateEaseInOut } from './bezier.js'
 	}
 
 	const resetAnimation = () => {
+		console.log('resetAnimation')
 		const delay = Math.random() * 2 + 1 // random delay between 1 and 6 seconds
 		const isHorizontal = Math.random() < 0.66 // 2/3 chance of horizontal movement
 		const { column, row } = getRandomRowAndColumn()
 		const index = isHorizontal ? row : column
 		const direction = Math.random() < 0.5 ? 1 : -1
-		const currentTime = 0
-		const adjacentTime = -adjacentDelay
-		const twoOverTime = -2 * adjacentDelay
-		const threeOverTime = -3 * adjacentDelay
 
-		return { delay, isHorizontal, index, direction, currentTime, adjacentTime, twoOverTime, threeOverTime }
+		const offsetTimes = animationIndices.map((i) => -i * adjacentDelay)
+
+		return { delay, isHorizontal, index, direction, offsetTimes }
 	}
 
 	let animation = resetAnimation()
 
-	const clamp = (value, min = 0, max = 1) => {
-		return Math.max(min, Math.min(value, max))
-	}
+	const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(value, max))
 
 	const update = delta => {
 		animation.delay -= delta
 		if (animation.delay > 0) return
 
-		const { index, isHorizontal, direction } = animation
+		const { index, isHorizontal, direction, offsetTimes } = animation
 
-		animation.currentTime += delta
-		animation.adjacentTime += delta
-		animation.twoOverTime += delta
-		animation.threeOverTime += delta
+		animationIndices.forEach(i => {
+			offsetTimes[i] += delta
+			if (offsetTimes[i] >= interpolationTime) {
+				offsetTimes[i] = interpolationTime
+			}
+		})
 
-		const animationComplete = animation.threeOverTime >= interpolationTime
-
-		if (animation.currentTime >= interpolationTime) animation.currentTime = interpolationTime
-		if (animation.adjacentTime >= interpolationTime) animation.adjacentTime = interpolationTime
-		if (animation.twoOverTime >= interpolationTime) animation.twoOverTime = interpolationTime
+		const animationComplete = offsetTimes[offsetTimes.length - 1] === interpolationTime
 		if (animationComplete) animation = resetAnimation()
 
-		const tMain = clamp(animation.currentTime / interpolationTime)
-		const tAdjacent = clamp(animation.adjacentTime / interpolationTime)
-		const tTwoOver = clamp(animation.twoOverTime / interpolationTime)
-		const tThreeOver = clamp(animation.threeOverTime / interpolationTime)
+		// compute easing values for each offset based on the current time
+		const tValues = offsetTimes.map(t => clamp(t / interpolationTime))
 
-		const rowMatchesIndex = ({ row }) => row === index
-		const columnMatchesIndex = ({ column }) => column === index
-		const rowIsAdjacentToIndex = ({ row }) => Math.abs(row - index) === 1
-		const rowIsTwoOverFromIndex = ({ row }) => Math.abs(row - index) === 2
-		const rowIsThreeOverFromIndex = ({ row }) => Math.abs(row - index) === 3
-		const columnIsAdjacentToIndex = ({ column }) => Math.abs(column - index) === 1
-		const columnIsTwoOverFromIndex = ({ column }) => Math.abs(column - index) === 2
-		const columnIsThreeOverFromIndex = ({ column }) => Math.abs(column - index) === 3
-
-		const find = {
-			match: isHorizontal ? rowMatchesIndex : columnMatchesIndex,
-			adjacent: isHorizontal ? rowIsAdjacentToIndex : columnIsAdjacentToIndex,
-			twoOver: isHorizontal ? rowIsTwoOverFromIndex : columnIsTwoOverFromIndex,
-			threeOver: isHorizontal ? rowIsThreeOverFromIndex : columnIsThreeOverFromIndex
-		}
-
-		const selectedCircles = circles.filter(c => find.match(c))
-		const adjacentCircles = circles.filter(c => find.adjacent(c))
-		const twoOverCircles = circles.filter(c => find.twoOver(c))
-		const threeOverCircles = circles.filter(c => find.threeOver(c))
+		const isDistanceFromIndex = (c, distance) => Math.abs((isHorizontal ? c.row : c.column) - index) === distance
+		const circleGroups = animationIndices.map(i => circles.filter(c => isDistanceFromIndex(c, i)))
 
 		const axis = isHorizontal ? 'x' : 'y'
-		const fullWidth = selectedCircles.length * circleDistance
+		const fullWidth = circleGroups[0].length * circleDistance
 
 		if (animationComplete) {
-			// move circles back to their original positions after the animation completes
-			selectedCircles.forEach(circle => circle.position[axis] += circle.offset[axis])
-			adjacentCircles.forEach(circle => circle.position[axis] += circle.offset[axis])
-			twoOverCircles.forEach(circle => circle.position[axis] += circle.offset[axis])
-			threeOverCircles.forEach(circle => circle.position[axis] += circle.offset[axis])
+			circles.forEach(circle => {
+				const { column, row } = circle
+				circle.position.x = column * circleDistance
+				circle.position.y = row * circleDistance
+				circle.offset = { x: 0, y: 0 }
+			})
+			return
 		}
-
-
-		const mainOffset = interpolateEaseInOut(0, fullWidth, tMain) * direction
-		const adjacentOffset = interpolateEaseInOut(0, fullWidth, tAdjacent) * direction
-		const twoOverOffset = interpolateEaseInOut(0, fullWidth, tTwoOver) * direction
-		const threeOverOffset = interpolateEaseInOut(0, fullWidth, tThreeOver) * direction
 
 		const move = (circle, offset) => {
 			circle.offset[axis] = offset
 
 			if (direction > 0 && circle.offset[axis] + circle.position[axis] >= fullWidth) {
 				circle.position[axis] -= fullWidth
-				circle.image = getRandomImage()
+				if (changeImageOnWrap) circle.image = getRandomImage()
 			}
 
 			if (direction < 0 && circle.offset[axis] + circle.position[axis] < 0) {
 				circle.position[axis] += fullWidth
-				circle.image = getRandomImage()
+				if (changeImageOnWrap) circle.image = getRandomImage()
 			}
 		}
 
-		selectedCircles.forEach(circle => move(circle, mainOffset))
-		adjacentCircles.forEach(circle => move(circle, adjacentOffset))
-		twoOverCircles.forEach(circle => move(circle, twoOverOffset))
-		threeOverCircles.forEach(circle => move(circle, threeOverOffset))
-
+		circleGroups.forEach((group, i) => {
+			const offset = interpolateEaseInOut(0, fullWidth, tValues[i]) * direction
+			group.forEach(circle => move(circle, offset))
+		})
 	}
 
 	const draw = context => {
@@ -235,7 +203,6 @@ import { interpolateEaseInOut } from './bezier.js'
 
 			context.drawImage(image, insetX, insetY, diameter, diameter)
 		})
-
 
 		circles.forEach(drawCircle)
 
