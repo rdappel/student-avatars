@@ -31,8 +31,15 @@ main {
     align-items: center;
     gap: 20px;
 }
- 
-.login {
+
+main > div {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+}
+
+button {
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -46,7 +53,7 @@ main {
     font-size: 1.2rem;
 }
  
-.login:hover {
+button {
     background-color: #333;
 }
 

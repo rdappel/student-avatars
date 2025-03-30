@@ -4,9 +4,7 @@ import { loadImages, createImageClipper } from './image.js'
 //import { createGrid } from './grid.js'
 import { interpolateEaseInOut } from './bezier.js'
 
-
-(async () => {
-
+const setupBackground = async () => {
 	// testing images
 	const imageSources = [
 		'images/building1.jpg',
@@ -209,4 +207,17 @@ import { interpolateEaseInOut } from './bezier.js'
 	}
 
 	gameLoop.start(update, draw)
-})()
+}
+
+const setupAuthButtons = () => {
+	const loginButton = document.querySelector('.auth button.login')
+	const logoutButton = document.querySelector('.auth button.logout')
+
+	loginButton?.addEventListener('click', () => window.location.href = '/auth/github')
+	logoutButton?.addEventListener('click', () => window.location.href = '/logout')
+}
+
+
+
+setupBackground()
+setupAuthButtons()
