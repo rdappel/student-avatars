@@ -91,7 +91,8 @@ import { interpolateEaseInOut } from './bezier.js'
 	const animationIndices = [...Array(numberOfAnimationRows).keys()]
 	const interpolationTime = 5 // seconds for a full loop of the row
 	const adjacentDelay = 0.25 // seconds for adjacent rows to start their animation
-	const changeImageOnWrap = false
+	const changeImageOnWrap = true
+	const changeColorOnWrap = true
 
 	const getRandomRowAndColumn = disallow => {
 		const getIndex = dimension => {
@@ -159,14 +160,13 @@ import { interpolateEaseInOut } from './bezier.js'
 		const move = (circle, offset) => {
 			circle.offset[axis] = offset
 
-			if (direction > 0 && circle.offset[axis] + circle.position[axis] >= fullWidth) {
-				circle.position[axis] -= fullWidth
-				if (changeImageOnWrap) circle.image = getRandomImage()
-			}
+			const wrappedPositive = circle.offset[axis] + circle.position[axis] >= fullWidth
+			const wrappedNegative = circle.offset[axis] + circle.position[axis] < 0
 
-			if (direction < 0 && circle.offset[axis] + circle.position[axis] < 0) {
-				circle.position[axis] += fullWidth
+			if (wrappedPositive || wrappedNegative) {
+				circle.position[axis] -= (fullWidth * direction)
 				if (changeImageOnWrap) circle.image = getRandomImage()
+				if (changeColorOnWrap) circle.color = getRandomColor()
 			}
 		}
 
