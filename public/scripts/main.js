@@ -5,23 +5,35 @@ import { loadImages, createImageClipper } from './image.js'
 import { interpolateEaseInOut } from './bezier.js'
 
 const setupBackground = async () => {
-	// testing images
-	const imageSources = [
-		'images/building1.jpg',
-		'images/fox-logo.gif',
-		'images/logo.png',
-		'https://avatars.githubusercontent.com/u/5315168?v=4',
-		'https://avatars.githubusercontent.com/u/1252813?v=4',
-		'https://avatars.githubusercontent.com/u/1778599?v=4',
-		'https://avatars.githubusercontent.com/u/16659436?v=4',
-		'https://avatars.githubusercontent.com/u/171260387?v=4'
-	]
 
 	const getByte = () => Math.floor(Math.random() * 255)
 	const getRandomColor = () => `rgb(${getByte()}, ${getByte()}, ${getByte()})`
+	const clearColor = getRandomColor()
+	const body = document.querySelector('body')
+	body.style.backgroundColor = clearColor
+
+	const fvtcLogos = [
+		'images/building1.jpg',
+		'images/fox-logo.gif',
+		'images/logo.png'
+	]
+
+	// const imageSources = [
+	// 	'https://avatars.githubusercontent.com/u/5315168?v=4',
+	// 	'https://avatars.githubusercontent.com/u/1252813?v=4',
+	// 	'https://avatars.githubusercontent.com/u/1778599?v=4',
+	// 	'https://avatars.githubusercontent.com/u/16659436?v=4',
+	// 	'https://avatars.githubusercontent.com/u/171260387?v=4'
+	// ]
+
+	const request = await fetch('https://avatars.fvtc.software/api/v1/users')
+	const users = await request.json()
+
+	const imageSources = [ ...fvtcLogos,
+		...users.map(user => user.avatarUrl)
+	]
 
 	const canvas = document.querySelector('#background-canvas')
-	const clearColor = getRandomColor()
 	const gameLoop = getGameLoop({ canvas, clearColor })
 	const githubCorner = document.querySelector('.github-corner svg')
 	githubCorner.style.color = clearColor

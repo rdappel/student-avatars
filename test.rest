@@ -1,0 +1,36 @@
+
+// Variables
+###
+@url=https://avatars.fvtc.software
+@api=api/v1
+
+
+// show all user avatar urls
+###
+GET {{url}}/{{api}}/users
+
+// show all user data for user rdappel
+###
+GET {{url}}/{{api}}/users/rdappel
+
+// insert a new user (foote)
+###
+POST {{url}}/{{api}}/users
+Content-Type: application/json
+
+{
+	"username": "foote",
+	"displayName": "Brian Foote",
+	"avatarUrl": "https://avatars.githubusercontent.com/u/1252813?v=4"
+}
+
+// insert a new user (wetzel)
+###
+POST {{url}}/{{api}}/users
+Content-Type: application/json
+
+{
+	"username": "joemwetzel",
+	"displayName": "Joe Wetzel",
+	"avatarUrl": "https://avatars.githubusercontent.com/u/1778599?v=4"
+}
