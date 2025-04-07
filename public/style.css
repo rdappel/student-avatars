@@ -63,9 +63,22 @@ button {
 }
 
 img.avatar {
-	border: 12px solid #7e7e7e;
+	border: 15px solid #7e7e7e;
 	border-radius: 50%;
 }
+
+input[type="text"] {
+	padding: 8px;
+	border: 1px solid #ccc;
+	border-radius: 5px;
+	font-size: 1rem;
+}
+
+input[type="color"] {
+	border-radius: 5px;
+	cursor: pointer;
+}
+
 
 @keyframes octocat-wave {
 

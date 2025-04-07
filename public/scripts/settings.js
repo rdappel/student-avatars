@@ -19,11 +19,17 @@ export const setupSettings = () => {
 	colorInput.addEventListener('change', onColorChange)
 
 	saveButton.addEventListener('click', async () => {
+		if (saveButton.disabled) return
+		
+		if (!displayNameInput.checkValidity()) return displayNameInput.reportValidity()
+		if (!colorInput.checkValidity()) return colorInput.reportValidity()
+
 		const displayName = displayNameInput.value
 		const color = colorInput.value
 
 		if (!displayName || !color) return
 
+		saveButton.innerText = 'Saving...'
 		const request = await fetch(`/api/v1/users/${username}`, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
