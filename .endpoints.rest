@@ -21,7 +21,8 @@ Content-Type: application/json
 {
 	"username": "foote",
 	"displayName": "Brian Foote",
-	"avatarUrl": "https://avatars.githubusercontent.com/u/1252813?v=4"
+	"avatarUrl": "https://avatars.githubusercontent.com/u/1252813?v=4",
+	"color": "#ff00ff"
 }
 
 // insert a new user (wetzel)
@@ -32,5 +33,6 @@ Content-Type: application/json
 {
 	"username": "joemwetzel",
 	"displayName": "Joe Wetzel",
-	"avatarUrl": "https://avatars.githubusercontent.com/u/1778599?v=4"
+	"avatarUrl": "https://avatars.githubusercontent.com/u/1778599?v=4",
+	"color": "#00ff00"
 }

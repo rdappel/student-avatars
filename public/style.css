@@ -36,7 +36,7 @@ main > div {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 10px;
+	gap: 16px;
 }
 
 button {
@@ -60,6 +60,11 @@ button {
 
 .github-corner:hover .octo-arm {
 	animation: octocat-wave 560ms ease-in-out
+}
+
+img.avatar {
+	border: 12px solid #7e7e7e;
+	border-radius: 50%;
 }
 
 @keyframes octocat-wave {

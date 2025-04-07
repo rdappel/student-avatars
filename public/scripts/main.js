@@ -3,6 +3,8 @@ import { getGameLoop } from './game-loop.js'
 import { loadImages, createImageClipper } from './image.js'
 //import { createGrid } from './grid.js'
 import { interpolateEaseInOut } from './bezier.js'
+import { setupAuthButtons } from './auth.js'
+import { setupSettings } from './settings.js'
 
 const setupBackground = async () => {
 
@@ -29,8 +31,9 @@ const setupBackground = async () => {
 	const request = await fetch('https://avatars.fvtc.software/api/v1/users')
 	const users = await request.json()
 
-	const imageSources = [ ...fvtcLogos,
-		...users.map(user => user.avatarUrl)
+	const imageSources = [
+		...users.map(user => user.avatarUrl),
+		...fvtcLogos
 	]
 
 	const canvas = document.querySelector('#background-canvas')
@@ -49,6 +52,8 @@ const setupBackground = async () => {
 		height: window.screen.availHeight
 	}
 
+	console.log(availableScreenSize)
+
 	const resizeCanvas = () => {
 		canvas.width = window.innerWidth
 		canvas.height = window.innerHeight
@@ -61,12 +66,18 @@ const setupBackground = async () => {
 	const clipImage = createImageClipper(radius - borderWidth)
 	const images = (await loadImages(imageSources)).map(clipImage)
 
-	const getRandomImage = () => images[Math.floor(Math.random() * images.length)]
+	//const getRandomImage = () => images[Math.floor(Math.random() * images.length)]
+	const getRandomImageIndex = () => Math.floor(Math.random() * images.length)
 
 	const createCircle = (position, column, row) => {
-		const color = getRandomColor()
+		const index = getRandomImageIndex()
+		const image = images[index]
+
+		// there are more images than users, so randomize the color (for the fvtc logos)
+		const color = users[index]?.color ? users[index].color : getRandomColor()
+
 		const offset = { x: 0, y: 0 }
-		const image = getRandomImage()
+		//const image = getRandomImage()
 		return { position, color, image, column, row, offset }
 	}
 
@@ -92,10 +103,8 @@ const setupBackground = async () => {
 
 	const gridSize = initializeCircles()
 	
-	const xRemainder = canvas.width % circleDistance
-	const yRemainder = canvas.height % circleDistance
-	const xAdjustment = (xRemainder + gap) / 2
-	const yAdjustment = (yRemainder + gap) / 2
+	const yAdjustment = ((canvas.height + gap) % circleDistance) / 2
+	const xAdjustment = ((canvas.width + gap) % circleDistance) / 2
 
 	const numberOfAnimationRows = gridSize.height > gridSize.width ? gridSize.height : gridSize.width
 	const animationIndices = [...Array(numberOfAnimationRows).keys()]
@@ -175,8 +184,8 @@ const setupBackground = async () => {
 
 			if (wrappedPositive || wrappedNegative) {
 				circle.position[axis] -= (fullWidth * direction)
-				if (changeImageOnWrap) circle.image = getRandomImage()
-				if (changeColorOnWrap) circle.color = getRandomColor()
+				//if (changeImageOnWrap) circle.image = getRandomImage()
+				//if (changeColorOnWrap) circle.color = getRandomColor()
 			}
 		}
 
@@ -203,8 +212,8 @@ const setupBackground = async () => {
 			context.fillStyle = color
 
 			context.beginPath()
-			const x = position.x + offset.x - circleDistance + radius - (circleDistance - xAdjustment)
 			const y = position.y + offset.y - circleDistance + radius - (circleDistance - yAdjustment)
+			const x = position.x + offset.x - circleDistance + radius - (circleDistance - xAdjustment)
 			context.arc(x, y, radius, 0, Math.PI * 2)
 			context.fill()
 
@@ -221,15 +230,7 @@ const setupBackground = async () => {
 	gameLoop.start(update, draw)
 }
 
-const setupAuthButtons = () => {
-	const loginButton = document.querySelector('.auth button.login')
-	const logoutButton = document.querySelector('.auth button.logout')
-
-	loginButton?.addEventListener('click', () => window.location.href = '/auth/github')
-	logoutButton?.addEventListener('click', () => window.location.href = '/logout')
-}
-
-
 
 setupBackground()
 setupAuthButtons()
+setupSettings()
