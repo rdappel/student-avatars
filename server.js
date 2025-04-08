@@ -98,8 +98,10 @@ const renderProfilePage = async request => {
 	const contentElement = document.querySelector('main > div')
 	contentElement.innerHTML += profileSelfHtml
 	contentElement.innerHTML += logoutHtml
-	const usernameElement = contentElement.querySelector('.username')
-	usernameElement.textContent = displayName || username
+	const usernameElements = contentElement.querySelectorAll('.username')
+	usernameElements.forEach(element => element.textContent = displayName || username)
+	const githubLinkElement = contentElement.querySelector('.github-profile')
+	githubLinkElement.href = `https://github.com/${username}`
 	const avatarElement = contentElement.querySelector('.avatar')
 	avatarElement.src = avatarUrl
 	avatarElement.alt = `${username}'s avatar`
@@ -129,9 +131,11 @@ const renderUserPage = async request => {
 	const { document } = dom.window
 	const contentElement = document.querySelector('main > div')
 	contentElement.innerHTML += profileOtherHtml
-	contentElement.innerHTML += username ? logoutHtml : loginHtml
-	const usernameElement = contentElement.querySelector('.username')
-	usernameElement.textContent = displayName || username
+	contentElement.innerHTML += profileName ? logoutHtml : loginHtml
+	const usernameElements = contentElement.querySelectorAll('.username')
+	usernameElements.forEach(element => element.textContent = displayName || profileName)
+	const githubLinkElement = contentElement.querySelector('.github-profile')
+	githubLinkElement.href = `https://github.com/${profileName}`
 	const avatarElement = contentElement.querySelector('.avatar')
 	avatarElement.src = avatarUrl
 	avatarElement.alt = `${username}'s avatar`
