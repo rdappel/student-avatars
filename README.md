@@ -2,7 +2,7 @@
 
 # FVTC Student Avatars
 
-Source code for the [FVTC Student Avatars](avatars.fvtc.software) project.
+Source code for the [FVTC Student Avatars](https://avatars.fvtc.software) project.
 
 ## Project Overview
 
