@@ -1,4 +1,4 @@
-<img src="https://github.com/rdappel/student-avatars/raw/master/doc/readme-banner.png" alt="FVTC Student Avatars"/>
+<img src="https://github.com/rdappel/student-avatars/blob/dev/doc/md-banner.png?raw=true" alt="FVTC Student Avatars"/>
 
 # FVTC Student Avatars
 
