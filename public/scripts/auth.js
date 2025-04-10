@@ -5,4 +5,7 @@ export const setupAuthButtons = () => {
 	
 	const logoutButton = document.querySelector('button.logout')
 	logoutButton?.addEventListener('click', () => window.location.href = '/logout')
+
+	const profileButton = document.querySelector('button.profile')
+	profileButton?.addEventListener('click', () => window.location.href = `/`)
 }

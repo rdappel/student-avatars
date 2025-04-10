@@ -37,6 +37,7 @@ const strategyAuth = {
 	clientID: env.GITHUB_CLIENT_ID,
 	clientSecret: env.GITHUB_SECRET_KEY,
 	callbackURL: `https://avatars.fvtc.software/auth/github/callback`
+	//callbackURL: `http://localhost:${port}/auth/github/callback`
 }
 
 const strategyCallback = (_, __, profile, done) => done(null, profile)
@@ -131,14 +132,21 @@ const renderUserPage = async request => {
 	const { document } = dom.window
 	const contentElement = document.querySelector('main > div')
 	contentElement.innerHTML += profileOtherHtml
-	contentElement.innerHTML += profileName ? logoutHtml : loginHtml
+	if (username) {
+		contentElement.innerHTML += `<button class="profile">Back to Your Profile</button>`
+		contentElement.innerHTML += logoutHtml
+	}
+	else {
+		contentElement.innerHTML += loginHtml
+	}
+	//contentElement.innerHTML += username ? logoutHtml : loginHtml
 	const usernameElements = contentElement.querySelectorAll('.username')
 	usernameElements.forEach(element => element.textContent = displayName || profileName)
 	const githubLinkElement = contentElement.querySelector('.github-profile')
 	githubLinkElement.href = `https://github.com/${profileName}`
 	const avatarElement = contentElement.querySelector('.avatar')
 	avatarElement.src = avatarUrl
-	avatarElement.alt = `${username}'s avatar`
+	avatarElement.alt = `${profileName}'s avatar`
 	avatarElement.style.borderColor = color
 
 	return dom.serialize()
@@ -172,11 +180,17 @@ app.get('/:profileName([a-zA-Z0-9-]{1,39})', async (request, response) => {
 		const { username, displayName, photos } = request.user
 		const color = getRandomColor()
 		const avatarUrl = photos[0].value
-		await fetch('https://avatars.fvtc.software/api/v1/users', {
+		const result = await fetch('https://avatars.fvtc.software/api/v1/users', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ username, displayName, avatarUrl, color })
 		})
+		const json = await result.json()
+		
+		if (!result.ok) {
+			console.error('Error saving user data:', json)
+			return response.status(500).send('Error saving user data')
+		}
 	}
 	
 	const username = request.user?.username

@@ -65,9 +65,11 @@ router.get('/:username([a-zA-Z0-9-]{1,39})', async (request, response) => {
 	response.json(rows[0])
 })
 
-router.post('/', ensureAuthenticated, async (request, response) => {
-	const { username } = request.body
-	if (!username) return response.status(400).send('Bad Request')
+router.post('/', async (request, response) => {
+	const { username, displayName, avatarUrl, color } = request.body
+	if (!username || !displayName || !avatarUrl || !color) {
+		return response.status(400).send('Bad Request')
+	}
 
 	const { connection, error } = await getConnection()
 
@@ -75,8 +77,6 @@ router.post('/', ensureAuthenticated, async (request, response) => {
 		console.error('Error connecting to the database:', error)
 		return response.status(500).send('Error connecting to the database')
 	}
-
-	const { displayName, avatarUrl, color } = request.body
 	const query = 'INSERT IGNORE INTO users (username, displayName, avatarUrl, color) VALUES (?, ?, ?, ?)'
 	const [result] = await connection.query(query, [ username, displayName, avatarUrl, color ])
 	connection.release()
